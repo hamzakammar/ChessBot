@@ -7,16 +7,20 @@ from .utils.search import choose_best_move
 from .utils.move_index import move_to_index
 import time
 from huggingface_hub import hf_hub_download
+import os
 
 # Load model once on startup
 WEIGHTS_PATH = Path(__file__).parent.parent / "weights" / "best.pt"
 if not WEIGHTS_PATH.exists():
     print("[Bot] Downloading weights from Hugging Face...")
     WEIGHTS_PATH.parent.mkdir(exist_ok=True)
+    # Get HF token from environment (optional, for private repos)
+    hf_token = os.environ.get("HF_TOKEN", None)
     downloaded = hf_hub_download(
         repo_id="hamzakammar/chesshacks-model",
         filename="best.pt",
-        cache_dir=str(WEIGHTS_PATH.parent)
+        cache_dir=str(WEIGHTS_PATH.parent),
+        token=hf_token
     )
     # Move to expected location
     import shutil
