@@ -6,9 +6,22 @@ from .models.chess_net import ChessNet
 from .utils.search import choose_best_move
 from .utils.move_index import move_to_index
 import time
+from huggingface_hub import hf_hub_download
 
 # Load model once on startup
 WEIGHTS_PATH = Path(__file__).parent.parent / "weights" / "best.pt"
+if not WEIGHTS_PATH.exists():
+    print("[Bot] Downloading weights from Hugging Face...")
+    WEIGHTS_PATH.parent.mkdir(exist_ok=True)
+    downloaded = hf_hub_download(
+        repo_id="hamzakammar/chesshacks-model",
+        filename="best.pt",
+        cache_dir=str(WEIGHTS_PATH.parent)
+    )
+    # Move to expected location
+    import shutil
+    shutil.copy(downloaded, WEIGHTS_PATH)
+    print(f"[Bot] Downloaded weights to {WEIGHTS_PATH}")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"[Bot] Using device: {device}")
 
