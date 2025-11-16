@@ -1,10 +1,22 @@
 from .utils import chess_manager, GameContext
 from chess import Move
-import random
+import torch
+from pathlib import Path
+from .models.chess_net import ChessNet
+from .utils.search import choose_best_move
+from .utils.move_index import move_to_index
 import time
 
-# Write code here that runs once
-# Can do things like load models from huggingface, make connections to subprocesses, etcwenis
+# Load model once on startup
+WEIGHTS_PATH = Path(__file__).parent.parent / "weights" / "best.pt"
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"[Bot] Using device: {device}")
+
+model = ChessNet().to(device)
+ckpt = torch.load(WEIGHTS_PATH, map_location=device)
+model.load_state_dict(ckpt["model_state"])
+model.eval()
+print(f"[Bot] Loaded model from {WEIGHTS_PATH}")
 
 
 @chess_manager.entrypoint
@@ -12,29 +24,36 @@ def test_func(ctx: GameContext):
     # This gets called every time the model needs to make a move
     # Return a python-chess Move object that is a legal move for the current position
 
-    print("Cooking move...")
-    print(ctx.board.move_stack)
-    time.sleep(0.1)
+    print("Computing best move...")
+    start_time = time.time()
 
+    # Use trained model to choose best move
+    best_move, score = choose_best_move(
+        ctx.board,
+        model,
+        device=device,
+        depth=3,        # Search depth
+        root_k=20,      # Top 20 moves to consider at root
+        child_k=10      # Top 10 moves to consider in tree
+    )
+    
+    elapsed = time.time() - start_time
+    print(f"[Bot] Move: {best_move}, Score: {score:.3f}, Time: {elapsed:.2f}s")
+    
+    # Log move probabilities for analysis
+    # For now, just give the best move high probability
     legal_moves = list(ctx.board.generate_legal_moves())
-    if not legal_moves:
-        ctx.logProbabilities({})
-        raise ValueError("No legal moves available (i probably lost didn't i)")
-
-    move_weights = [random.random() for _ in legal_moves]
-    total_weight = sum(move_weights)
-    # Normalize so probabilities sum to 1
-    move_probs = {
-        move: weight / total_weight
-        for move, weight in zip(legal_moves, move_weights)
-    }
+    move_probs = {move: 0.01 for move in legal_moves}
+    if best_move:
+        move_probs[best_move] = 0.99
     ctx.logProbabilities(move_probs)
 
-    return random.choices(legal_moves, weights=move_weights, k=1)[0]
+    return best_move
 
 
 @chess_manager.reset
 def reset_func(ctx: GameContext):
     # This gets called when a new game begins
-    # Should do things like clear caches, reset model state, etc.
+    # Clear any caches if needed
+    print("[Bot] Game reset")
     pass
