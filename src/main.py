@@ -49,9 +49,9 @@ def test_func(ctx: GameContext):
         ctx.board,
         model,
         device=device,
-        depth=3,        # Search depth
-        root_k=20,      # Top 20 moves to consider at root
-        child_k=10      # Top 10 moves to consider in tree
+        depth=2,        # Search depth (reduced for faster moves)
+        root_k=15,      # Top 15 moves to consider at root
+        child_k=8       # Top 8 moves to consider in tree
     )
     
     elapsed = time.time() - start_time
