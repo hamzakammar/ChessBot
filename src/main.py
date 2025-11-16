@@ -17,7 +17,7 @@ if not WEIGHTS_PATH.exists():
     # Get HF token from environment (optional, for private repos)
     hf_token = os.environ.get("HF_TOKEN", None)
     downloaded = hf_hub_download(
-        repo_id="hamzakammar/chesshacks-model",
+        repo_id="HamzaAmmar/chesshacks-model",
         filename="best.pt",
         cache_dir=str(WEIGHTS_PATH.parent),
         token=hf_token
